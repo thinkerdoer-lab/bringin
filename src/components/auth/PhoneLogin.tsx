@@ -56,7 +56,7 @@ export function PhoneLogin({ onComplete, isQrEntry, onQREntry, onOwnerLogin, own
   if (step === 'welcome') {
     return (
       <div className="h-screen bg-white flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
           <div className="text-center space-y-4 mb-16">
             {ownerAuthCompleted ? (
               <>

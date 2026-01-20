@@ -675,7 +675,7 @@
   }
 
   .h-screen {
-    height: 100vh;
+    height: 100dvh;
   }
 
   .max-h-\[80vh\] {
