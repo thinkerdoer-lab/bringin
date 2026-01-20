@@ -104,8 +104,18 @@ export function PhoneLogin({ onComplete, isQrEntry, onQREntry, onOwnerLogin, own
             <p className="text-xs text-neutral-400">
               로그인 시 서비스 이용약관 및 개인정보처리방침에 동의합니다
             </p>
-          </div>
-        </div>
+					</div>
+				</div>
+				<div>
+					<a
+						href="https://tally.so/r/D4pg9q"
+						target="_blank"
+						rel="noreferrer"
+						className="text-xs text-neutral-400 underline"
+					>
+						저기요...
+					</a>
+				</div>
       </div>
     );
   }

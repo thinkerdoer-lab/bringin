@@ -517,6 +517,10 @@
     margin-top: calc(var(--spacing) * 12);
   }
 
+	.mt-24 {
+    margin-top: calc(var(--spacing) * 24);
+  }
+
   .mt-auto {
     margin-top: auto;
   }
