@@ -63,7 +63,7 @@ export function QREntryFlow({ onComplete, onExit, storeId }: QREntryFlowProps) {
           <div className="text-center space-y-3 mb-12">
             <div className="text-neutral-900">브라운 카페</div>
             <p className="text-neutral-600">
-              한가한 시간, 음료 주문으로 열리는 자리
+              원하는 시간, 음료 주문으로 열리는 자리
               <br />
               외부 음식 반입이 가능합니다
             </p>

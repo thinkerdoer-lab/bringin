@@ -3,10 +3,11 @@ import { X } from 'lucide-react';
 interface OwnerConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onConfirm: () => void;
   cafeName: string;
 }
 
-export function OwnerConfirmModal({ isOpen, onClose, cafeName }: OwnerConfirmModalProps) {
+export function OwnerConfirmModal({ isOpen, onClose, onConfirm, cafeName }: OwnerConfirmModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -21,18 +22,17 @@ export function OwnerConfirmModal({ isOpen, onClose, cafeName }: OwnerConfirmMod
 
         <div className="text-center pt-4">
           <div className="text-lg text-neutral-900 mb-2 font-medium">
-            사장님 확인이 필요합니다
+            사장님이 아래 확인 버튼을 눌러주세요.
           </div>
           <div className="text-sm text-neutral-600 mb-6">
-            {cafeName}에 도착하셨다면<br />
-            사장님께 확인을 요청해주세요
+            확인 버튼을 누르면 이용시간이 시작됩니다.
           </div>
 
           <button
-            onClick={onClose}
-            className="w-full bg-neutral-900 text-white py-3 rounded-xl hover:bg-neutral-800 transition-colors"
+            onClick={onConfirm}
+            className="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-neutral-800 transition-colors"
           >
-            확인
+            사장님이 확인 버튼 클릭
           </button>
         </div>
       </div>

@@ -389,6 +389,12 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+#root {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
   :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) h1 {
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
@@ -1040,6 +1046,10 @@
 
   .border-white {
     border-color: var(--color-white);
+  }
+
+	.bg-red-600 {
+    background-color: var(--color-red-600);
   }
 
   .bg-amber-50 {

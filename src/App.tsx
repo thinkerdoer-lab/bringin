@@ -6,6 +6,8 @@ import { OwnerDashboard } from './components/OwnerDashboard';
 import { RoleSwitcher } from './components/RoleSwitcher';
 import { MyPage } from './components/MyPage';
 import { OwnerConfirmModal } from './components/OwnerConfirmModal';
+import { CurrentUsageModal } from './components/CurrentUsageModal';
+import { CopyableAddress } from './components/CopyableAddress';
 import { User, ChevronRight } from 'lucide-react';
 
 type UserRole = 'user' | 'owner';
@@ -77,6 +79,8 @@ export default function App() {
   // 팝업 상태 관리
   const [showOwnerConfirmModal, setShowOwnerConfirmModal] = useState(false);
   const [selectedCafeName, setSelectedCafeName] = useState('');
+  const [selectedUsageId, setSelectedUsageId] = useState<string | null>(null);
+  const [showCurrentUsageModal, setShowCurrentUsageModal] = useState(false);
 
   // 등록된 좌석 목록 (네모 박스 방식)
   const [registeredSeats, setRegisteredSeats] = useState<RegisteredSeat[]>([
@@ -176,6 +180,26 @@ export default function App() {
     setEntryMode('normal');
     setMainView('home');
   };
+
+  const handleOwnerConfirm = () => {
+    if (!selectedUsageId) {
+      setShowOwnerConfirmModal(false);
+      return;
+    }
+    setUsageHistory((prev) =>
+      prev.map((usage) =>
+        usage.id === selectedUsageId
+          ? { ...usage, status: 'current', startTime: new Date() }
+          : usage
+      )
+    );
+    setShowOwnerConfirmModal(false);
+    setSelectedUsageId(null);
+  };
+
+  const selectedUsage = selectedUsageId
+    ? usageHistory.find((usage) => usage.id === selectedUsageId) || null
+    : null;
 
   // QR 진입 플로우 (QR 스캔으로 들어온 경우에만)
   if (mainView === 'qr-entry' && entryMode === 'qr') {
@@ -330,7 +354,11 @@ export default function App() {
       </header>
 
       {/* 메인 영역 */}
-      <div className="flex-1 px-5 py-6 space-y-4">
+			<div className="flex-1 px-5 py-6 space-y-4">
+				<p className="text-neutral-900 text-center mb-6">
+					좌석 이용 시간은 2시간이며<br/>
+					카페마다 이용 규칙은 다를 수 있습니다.
+				</p>
         {/* 주요 CTA */}
         <button
           onClick={() => setMainView('user-a')}
@@ -361,7 +389,11 @@ export default function App() {
                     onClick={() => {
                       if (isWaiting) {
                         setSelectedCafeName(usage.cafeName);
+                        setSelectedUsageId(usage.id);
                         setShowOwnerConfirmModal(true);
+                      } else {
+                        setSelectedUsageId(usage.id);
+                        setShowCurrentUsageModal(true);
                       }
                     }}
                     className={`p-4 border ${borderColor} rounded-xl ${bgColor} ${isWaiting ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
@@ -437,7 +469,10 @@ export default function App() {
                   <div>
                     <h3 className="text-neutral-900">{usage.cafeName}</h3>
                     <p className="text-sm text-neutral-500 mt-1">
-                      {usage.cafeAddress}
+                      <CopyableAddress
+                        address={usage.cafeAddress}
+                        className="text-sm text-neutral-500 mt-1"
+                      />
                     </p>
                   </div>
                 </div>
@@ -466,7 +501,14 @@ export default function App() {
       <OwnerConfirmModal
         isOpen={showOwnerConfirmModal}
         onClose={() => setShowOwnerConfirmModal(false)}
+        onConfirm={handleOwnerConfirm}
         cafeName={selectedCafeName}
+      />
+      <CurrentUsageModal
+        isOpen={showCurrentUsageModal}
+        onClose={() => setShowCurrentUsageModal(false)}
+        usage={selectedUsage}
+        allowedFoods={allowedFoods}
       />
     </div>
   );

@@ -13,7 +13,6 @@ const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
 const DEFAULT_FOOD_OPTIONS = [
   '빵/디저트',
-  '간단한 외부 음식',
   '도시락',
   '샌드위치',
   '샐러드',
@@ -238,12 +237,9 @@ export function OwnerDashboard({
   };
 
   return (
-    <div className="h-screen bg-neutral-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-neutral-50 flex flex-col overflow-y-auto">
       <header className="px-5 py-4 flex items-center justify-between bg-white border-b border-neutral-100">
         <div className="flex items-center">
-          <button onClick={onBack} className="p-2 -ml-2">
-            <ArrowLeft className="w-5 h-5 text-neutral-700" />
-          </button>
           <div className="ml-3">
             <div className="text-neutral-900">좌석 관리</div>
             <div className="text-xs text-neutral-500">카페 운영자 화면</div>
@@ -598,7 +594,7 @@ export function OwnerDashboard({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => adjustSeatTypeCount(setting.id, -1)}
-                          disabled={setting.count === 0}
+                          disabled={setting.count === 1}
                           className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Minus className="w-3.5 h-3.5 text-neutral-700" />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, MapPin, Clock, Users, ChevronRight, ChevronDown, CheckCircle } from 'lucide-react';
 import type { SeatTypeSetting, AllowedFood, UsageHistory } from '../App';
+import { CopyableAddress } from './CopyableAddress';
 
 type Step =
   | 'intro'
@@ -23,10 +24,11 @@ const MOCK_CAFES = [
   {
     id: 1,
     name: '브라운 카페',
+    address: '서울시 강남구 테헤란로 123',
     distance: 120,
     availableSeats: 3,
 		allowsBread: true,
-		allowsDessert: true,
+		allowsSandwich: true,
     allowsFood: false,
     seatTypes: [
       { id: 'brown-2', capacity: 2, count: 1 },
@@ -37,10 +39,11 @@ const MOCK_CAFES = [
   {
     id: 2,
     name: '모닝 커피',
+    address: '서울시 강남구 역삼로 210',
     distance: 250,
     availableSeats: 2,
     allowsBread: false,
-		allowsDessert: false,
+		allowsSandwich: false,
     allowsFood: true,
     seatTypes: [
       { id: 'morning-2', capacity: 2, count: 2 },
@@ -49,10 +52,11 @@ const MOCK_CAFES = [
   {
     id: 3,
     name: '카페 온',
+    address: '서울시 강남구 논현로 455',
     distance: 380,
     availableSeats: 1,
     allowsBread: true,
-		allowsDessert: false,
+		allowsSandwich: false,
     allowsFood: true,
     seatTypes: [
       { id: 'on-1', capacity: 1, count: 1 },
@@ -61,10 +65,11 @@ const MOCK_CAFES = [
   {
     id: 4,
     name: '스위트 커피',
+    address: '서울시 강남구 봉은사로 77',
     distance: 650,
     availableSeats: 2,
     allowsBread: true,
-		allowsDessert: true,
+		allowsSandwich: true,
     allowsFood: true,
     seatTypes: [
       { id: 'sweet-2', capacity: 2, count: 1 },
@@ -74,10 +79,11 @@ const MOCK_CAFES = [
   {
     id: 5,
     name: '베이커리 카페',
+    address: '서울시 강남구 선릉로 315',
     distance: 850,
     availableSeats: 1,
     allowsBread: true,
-		allowsDessert: true,
+		allowsSandwich: true,
     allowsFood: false,
     seatTypes: [
       { id: 'bakery-4', capacity: 4, count: 1 },
@@ -114,7 +120,7 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
     selectedSeat: null,
     selectedDrinks: [],
   });
-  const [cafeCategory, setCafeCategory] = useState<'all' | 'bread' | 'dessert' | 'etc'>('all');
+  const [cafeCategory, setCafeCategory] = useState<'all' | 'bread' | 'sandwich' | 'etc'>('all');
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [drinkQuantities, setDrinkQuantities] = useState<{ [key: number]: number }>({});
   const [distanceFilter, setDistanceFilter] = useState<number>(500);
@@ -127,6 +133,10 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
   const updateDrinkQuantity = (drinkId: number, delta: number) => {
     setDrinkQuantities((prev) => {
       const current = prev[drinkId] || 0;
+      const totalCount = Object.values(prev).reduce((sum, qty) => sum + qty, 0);
+      if (delta > 0 && totalCount >= state.peopleCount) {
+        return prev;
+      }
       const newValue = Math.max(0, current + delta);
       return { ...prev, [drinkId]: newValue };
     });
@@ -159,10 +169,10 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
   const getAllowedFoodLabels = (cafe: (typeof MOCK_CAFES)[number]) => {
     const labels: string[] = [];
     if (cafe.allowsBread) {
-      labels.push('빵');
+      labels.push('빵/디저트');
 		}
-		if (cafe.allowsDessert) {
-      labels.push('디저트');
+		if (cafe.allowsSandwich) {
+      labels.push('샌드위치');
     }
     if (cafe.allowsFood) {
       labels.push('기타');
@@ -188,7 +198,7 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
           <div className="text-center space-y-3 mb-16">
-            <div className="text-neutral-900">한가한 시간, 음료 주문으로 열리는 자리</div>
+            <div className="text-neutral-900">원하는 시간, 음료 주문으로 열리는 자리</div>
             <p className="text-neutral-500">
               외부 음식을 먹을 수 있는
               <br />
@@ -196,7 +206,7 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
             </p>
           </div>
 
-          <div className="w-full max-w-sm">
+					<div className="w-full max-w-sm">
             <button
               onClick={() => setStep('people-count')}
               className="w-full bg-neutral-900 text-white py-4 rounded-xl hover:bg-neutral-800 transition-colors"
@@ -225,7 +235,7 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
               <Users className="w-5 h-5" />
               <span className="text-sm">이용 인원</span>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 mt-2">
               <button
                 onClick={() =>
                   updateState({ peopleCount: Math.max(1, state.peopleCount - 1) })
@@ -236,7 +246,7 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
               >
                 -
               </button>
-              <div className="text-3xl text-neutral-900 font-semibold">
+              <div className="text-3xl text-neutral-900 font-semibold px-2">
                 {state.peopleCount}명
               </div>
               <button
@@ -251,14 +261,11 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
             </div>
           </div>
 
-          <p className="text-sm text-neutral-500 text-center">
-            실제 이용 인원 기준으로 안내됩니다
-          </p>
           <button
             onClick={() => setStep('seat-select')}
-            className="mt-6 w-full bg-neutral-900 text-white py-4 rounded-xl hover:bg-neutral-800 transition-colors"
+            className="mt-6 w-full bg-neutral-900 text-white py-4 rounded-xl hover:bg-neutral-800 transition-colors mt-4"
           >
-            좌석 선택하기
+            다음
           </button>
         </div>
       </div>
@@ -268,18 +275,22 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
   if (step === 'cafe-list') {
     // 선택된 거리 필터 이내의 카페만 필터링
     const selectedSeatCapacity = state.selectedSeat?.capacity;
+    const normalizedSelectedSeatCapacity =
+      selectedSeatCapacity !== undefined && selectedSeatCapacity !== null
+        ? Number(selectedSeatCapacity)
+        : null;
     const filteredCafes = MOCK_CAFES.filter((cafe) => {
       const hasOpenSeatType = cafe.seatTypes?.some((seat) => seat.count > 0);
-      const matchesSelectedSeat = selectedSeatCapacity
+      const matchesSelectedSeat = normalizedSelectedSeatCapacity !== null
         ? cafe.seatTypes?.some(
-            (seat) => seat.count > 0 && seat.capacity === selectedSeatCapacity
+            (seat) => seat.count > 0 && seat.capacity >= normalizedSelectedSeatCapacity
           )
         : true;
       const matchesCategory =
         cafeCategory === 'all' ||
         (cafeCategory === 'etc' && cafe.allowsFood) ||
         (cafeCategory === 'bread' && cafe.allowsBread) ||
-        (cafeCategory === 'dessert' && cafe.allowsDessert);
+        (cafeCategory === 'sandwich' && cafe.allowsSandwich);
       const isWithinDistance = cafe.distance <= distanceFilter;
       return (
         hasOpenSeatType &&
@@ -307,15 +318,15 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
           <div className="flex items-center gap-2">
             {[
               { id: 'all', label: '전체' },
-              { id: 'bread', label: '빵' },
-              { id: 'dessert', label: '디저트' },
+              { id: 'bread', label: '빵/디저트' },
+              { id: 'sandwich', label: '샌드위치' },
               { id: 'etc', label: '기타' },
             ].map((category) => {
               const isActive = cafeCategory === category.id;
               return (
                 <button
                   key={category.id}
-                  onClick={() => setCafeCategory(category.id as 'all' | 'bread' | 'dessert' | 'etc')}
+                  onClick={() => setCafeCategory(category.id as 'all' | 'bread' | 'sandwich' | 'etc')}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                     isActive
                       ? 'bg-neutral-900 text-white border-neutral-900'
@@ -420,6 +431,10 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
 
         <div className="flex-1 px-6 pt-6 pb-6 flex flex-col">
           <div className="space-y-6 mb-auto">
+            <div className="space-y-2">
+              <div className="text-neutral-900">카페 주소</div>
+              <CopyableAddress address={cafe.address} className="text-sm text-neutral-600" />
+            </div>
             <div className="space-y-3">
               <div className="text-neutral-900">허용 음식 종류</div>
               <div className="flex flex-wrap gap-2">
@@ -464,7 +479,27 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
     // 사장님이 설정한 좌석 유형만 표시
     const minCapacity = state.peopleCount;
     const maxCapacity = state.peopleCount * 2;
-    const availableSeats = seatTypeSettings.filter(
+    const hasMatchingSeatType = seatTypeSettings.some(
+      (s) => s.count > 0 && s.capacity >= minCapacity && s.capacity <= maxCapacity
+    );
+    const seatTypeSource = hasMatchingSeatType
+      ? seatTypeSettings
+      : MOCK_CAFES.flatMap((cafe) => cafe.seatTypes ?? []).reduce(
+          (acc, seat) => {
+            if (seat.count <= 0) {
+              return acc;
+            }
+            const existing = acc.find((item) => item.capacity === seat.capacity);
+            if (existing) {
+              existing.count += seat.count;
+            } else {
+              acc.push({ id: `cafe-${seat.capacity}`, capacity: seat.capacity, count: seat.count });
+            }
+            return acc;
+          },
+          [] as { id: string; capacity: number; count: number }[]
+        );
+    const availableSeats = seatTypeSource.filter(
       (s) => s.count > 0 && s.capacity >= minCapacity && s.capacity <= maxCapacity
     );
 
@@ -491,7 +526,7 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
                 >
                   <div className="text-left">
                     <div className="text-neutral-900">{seat.capacity}인석</div>
-                    <div className="text-sm text-neutral-500">{seat.count}석 남음</div>
+                    {/* <div className="text-sm text-neutral-500">{seat.count}석 남음</div> */}
                   </div>
                   <ChevronRight className="w-5 h-5 text-neutral-400" />
                 </button>
@@ -523,10 +558,10 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
 
         <div className="flex-1 px-6 pt-6 pb-6 flex flex-col">
           <div className="space-y-4 mb-6">
-            <div className="bg-neutral-50 rounded-xl p-4">
+            {/* <div className="bg-neutral-50 rounded-xl p-4">
               <div className="text-sm text-neutral-600 mb-1">선택한 좌석</div>
               <div className="text-neutral-900">{state.selectedSeat.type}</div>
-            </div>
+            </div> */}
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -537,6 +572,8 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
               </div>
               {MOCK_DRINKS.map((drink) => {
                 const quantity = drinkQuantities[drink.id] || 0;
+                const totalDrinkCount = getTotalDrinkCount();
+                const isAddDisabled = totalDrinkCount >= state.peopleCount;
                 return (
                   <div
                     key={drink.id}
@@ -557,7 +594,8 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
                       <span className="w-6 text-center text-neutral-900">{quantity}</span>
                       <button
                         onClick={() => updateDrinkQuantity(drink.id, 1)}
-                        className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center hover:bg-neutral-50"
+                        disabled={isAddDisabled}
+                        className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         +
                       </button>
@@ -569,7 +607,11 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
 
             <div className={`${isValidOrder ? 'bg-blue-50 border-blue-100 text-blue-900' : 'bg-amber-50 border-amber-100 text-amber-900'} border rounded-xl p-4 text-sm`}>
               {isValidOrder
-                ? `인원 ${state.peopleCount}명 기준 음료 ${totalDrinkCount}잔이 선택되었습니다`
+								? <>
+										인원 {state.peopleCount}명 기준 음료 {totalDrinkCount}잔이 선택되었습니다.
+										<br />
+										추가 주문은 매장에서 진행해주세요.
+									</>
                 : `인원 ${state.peopleCount}명 기준으로 음료를 ${state.peopleCount}잔 선택해주세요`}
             </div>
           </div>
@@ -653,8 +695,15 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
                 카페에 도착 후 사장님 확인이 완료되면
                 <br />
                 이용이 시작돼요
-              </div>
-            </div>
+							</div>
+						</div>
+						<div className="text-center">
+							<div className="text-sm text-amber-700">
+								30분 이상 노쇼일 경우
+								<br />
+								좌석은 자동으로 해제되며, 환불 불가합니다.
+							</div>
+						</div>
 
             {/* 상태 배지 */}
             <div className="flex justify-center">
@@ -670,8 +719,10 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
                 <div className="text-neutral-900">{state.selectedCafe.name}</div>
               </div>
               <div>
-                <div className="text-sm text-neutral-500 mb-1">선택 좌석</div>
-                <div className="text-neutral-900">{state.selectedSeat.type}</div>
+                <div className="text-sm text-neutral-500 mb-1">이용 인원 / 선택 좌석</div>
+                <div className="text-neutral-900">
+                  {state.peopleCount}명 / {state.selectedSeat.type}
+                </div>
               </div>
               <div>
                 <div className="text-sm text-neutral-500 mb-1">주문 음료</div>

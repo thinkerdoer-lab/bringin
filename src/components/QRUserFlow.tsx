@@ -29,6 +29,11 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
   const updateDrinkQuantity = (drinkId: number, delta: number) => {
     setDrinkQuantities((prev) => {
       const current = prev[drinkId] || 0;
+      const maxDrinkCount = selectedSeat?.capacity ?? 1;
+      const totalCount = Object.values(prev).reduce((sum, qty) => sum + qty, 0);
+      if (delta > 0 && totalCount >= maxDrinkCount) {
+        return prev;
+      }
       const newValue = Math.max(0, current + delta);
       return { ...prev, [drinkId]: newValue };
     });
@@ -180,7 +185,7 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
           <div className="space-y-3 mb-auto">
             <button
               onClick={() => {
-                setSelectedSeat({ type: '1인석' });
+                  setSelectedSeat({ type: '1인석', capacity: 1 });
                 if (hasDrink) {
                   setStartTime(new Date());
                   setStep('using');
@@ -196,7 +201,7 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
 
             <button
               onClick={() => {
-                setSelectedSeat({ type: '2인석' });
+                  setSelectedSeat({ type: '2인석', capacity: 2 });
                 if (hasDrink) {
                   setStartTime(new Date());
                   setStep('using');
@@ -218,7 +223,8 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
   if (step === 'drink-order') {
     const totalDrinkCount = getTotalDrinkCount();
     const totalPrice = getTotalPrice();
-    const isValidOrder = totalDrinkCount >= 1; // QR 진입 시 최소 1잔 이상 주문
+    const requiredDrinkCount = selectedSeat?.capacity ?? 1;
+    const isValidOrder = totalDrinkCount === requiredDrinkCount;
 
     return (
       <div className="h-screen bg-white flex flex-col">
@@ -240,11 +246,12 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
               <div className="flex items-center justify-between">
                 <div className="text-neutral-900">음료 선택</div>
                 <div className="text-sm text-neutral-600">
-                  {totalDrinkCount}잔 선택
+                  {totalDrinkCount} / {requiredDrinkCount}잔
                 </div>
               </div>
               {MOCK_DRINKS.map((drink) => {
                 const quantity = drinkQuantities[drink.id] || 0;
+                const isAddDisabled = totalDrinkCount >= requiredDrinkCount;
                 return (
                   <div
                     key={drink.id}
@@ -265,7 +272,8 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
                       <span className="w-6 text-center text-neutral-900">{quantity}</span>
                       <button
                         onClick={() => updateDrinkQuantity(drink.id, 1)}
-                        className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center hover:bg-neutral-50"
+                        disabled={isAddDisabled}
+                        className="w-8 h-8 rounded-lg border border-neutral-200 flex items-center justify-center hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         +
                       </button>
@@ -277,8 +285,8 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
 
             <div className={`${isValidOrder ? 'bg-blue-50 border-blue-100 text-blue-900' : 'bg-amber-50 border-amber-100 text-amber-900'} border rounded-xl p-4 text-sm`}>
               {isValidOrder
-                ? '좌석 이용 시간은 기본 2시간입니다'
-                : '최소 1잔 이상의 음료를 선택해주세요'}
+                ? `인원 ${requiredDrinkCount}명 기준 음료 ${totalDrinkCount}잔이 선택되었습니다`
+                : `인원 ${requiredDrinkCount}명 기준으로 음료를 ${requiredDrinkCount}잔 선택해주세요`}
             </div>
           </div>
 
@@ -291,7 +299,7 @@ export function QRUserFlow({ onComplete }: QRUserFlowProps) {
             <button
               onClick={() => {
                 if (!isValidOrder) {
-                  alert('최소 1잔 이상의 음료를 선택해주세요.');
+                  alert(`인원 ${requiredDrinkCount}명 기준으로 음료를 ${requiredDrinkCount}잔 선택해주세요.`);
                   return;
                 }
                 setStartTime(new Date());

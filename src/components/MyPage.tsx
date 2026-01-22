@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
+import { CopyableAddress } from './CopyableAddress';
 import type { UsageHistory } from '../App';
 
 interface MyPageProps {
@@ -40,49 +41,6 @@ export function MyPage({ phoneNumber, usageHistory, onBack }: MyPageProps) {
           <p className="mt-1 text-neutral-900">{phoneNumber}</p>
         </div>
 
-        {/* 현재 이용 중 */}
-        <div className="px-6 py-6 border-b-8 border-neutral-50">
-          <h2 className="text-neutral-900 mb-4">현재 이용 중</h2>
-          {currentUsage.length === 0 ? (
-            <div className="py-8 text-center text-neutral-400">
-              현재 이용 중인 카페가 없습니다
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {currentUsage.map((usage) => (
-                <div
-                  key={usage.id}
-                  className="p-4 border border-green-600 rounded-xl bg-green-50"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="text-neutral-900">{usage.cafeName}</h3>
-                      <p className="text-sm text-neutral-500 mt-1">{usage.cafeAddress}</p>
-                    </div>
-                    <span className="text-xs text-green-600 bg-white px-2 py-1 rounded-full border border-green-600">
-                      이용 중
-                    </span>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-green-200 text-sm space-y-1">
-                    <div className="flex justify-between text-neutral-600">
-                      <span>입장 시간</span>
-                      <span>{formatDate(usage.visitDate)}</span>
-                    </div>
-                    <div className="flex justify-between text-neutral-600">
-                      <span>주문 음료</span>
-                      <span>{usage.drinkOrdered}</span>
-                    </div>
-                    <div className="flex justify-between text-neutral-600">
-                      <span>이용 시간</span>
-                      <span>{usage.duration}분</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* 이용 내역 */}
         <div className="px-6 py-6">
           <h2 className="text-neutral-900 mb-4">이용 내역</h2>
@@ -100,7 +58,10 @@ export function MyPage({ phoneNumber, usageHistory, onBack }: MyPageProps) {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="text-neutral-900">{usage.cafeName}</h3>
-                      <p className="text-sm text-neutral-500 mt-1">{usage.cafeAddress}</p>
+                      <CopyableAddress
+                        address={usage.cafeAddress}
+                        className="text-sm text-neutral-500 mt-1"
+                      />
                     </div>
                   </div>
                   <div className="mt-3 pt-3 border-t border-neutral-100 text-sm space-y-1">
