@@ -45,9 +45,9 @@ export function OwnerQRAuth({ onComplete, onBack }: OwnerQRAuthProps) {
           </div>
 
           <div className="text-center space-y-3 mb-12">
-            <div className="text-neutral-900">매장 전용 QR을 스캔해주세요</div>
+            <div className="text-red-600">사장님 전용 QR을 스캔해주세요</div>
             <p className="text-neutral-600">
-              매장 내부에 있는 사장님 전용 QR 코드를
+              사장님 전용 QR 코드를
               <br />
               스캔하면 관리자 권한이 부여됩니다
             </p>

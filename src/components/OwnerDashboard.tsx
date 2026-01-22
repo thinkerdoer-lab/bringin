@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowLeft, Settings, Plus, X, CheckCircle2, Minus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, Settings, User, Plus, X, CheckCircle2, Minus } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import type { RegisteredSeat, AllowedFood, SeatTypeSetting, UsageHistory } from '../App';
 
@@ -11,7 +11,7 @@ interface OperationSettings {
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
-const DEFAULT_FOOD_OPTIONS = [
+const BASE_FOOD_OPTIONS = [
   '빵/디저트',
   '도시락',
   '샌드위치',
@@ -48,8 +48,58 @@ export function OwnerDashboard({
     startTime: '14:00',
     endTime: '17:00',
   });
+  const [activeTab, setActiveTab] = useState<'current' | 'settings'>('settings');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [tabGuardKey, setTabGuardKey] = useState(0);
   const [customFoodInput, setCustomFoodInput] = useState('');
+  const [defaultFoodOptions, setDefaultFoodOptions] = useState(BASE_FOOD_OPTIONS);
   const [selectedSeat, setSelectedSeat] = useState<RegisteredSeat | null>(null);
+  const savedSettingsRef = useRef<OperationSettings | null>(null);
+  const savedAllowedFoodsRef = useRef<AllowedFood[] | null>(null);
+  const savedSeatTypeSettingsRef = useRef<SeatTypeSetting[] | null>(null);
+  const hasInitializedRef = useRef(false);
+
+  const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+  const handleTimeToggle = (input: HTMLInputElement) => {
+    const isOpen = input.dataset.pickerOpen === 'true';
+    if (isOpen) {
+      input.blur();
+      input.dataset.pickerOpen = 'false';
+      return;
+    }
+    input.dataset.pickerOpen = 'true';
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+    } else {
+      input.focus();
+    }
+  };
+
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    savedSettingsRef.current = clone(settings);
+    savedAllowedFoodsRef.current = clone(allowedFoods);
+    savedSeatTypeSettingsRef.current = clone(seatTypeSettings);
+    hasInitializedRef.current = true;
+  }, [allowedFoods, seatTypeSettings, settings]);
+
+  const isSettingsDirty = () => {
+    if (!savedSettingsRef.current || !savedAllowedFoodsRef.current || !savedSeatTypeSettingsRef.current) {
+      return hasUnsavedChanges;
+    }
+    const currentSnapshot = {
+      settings,
+      allowedFoods,
+      seatTypeSettings,
+    };
+    const savedSnapshot = {
+      settings: savedSettingsRef.current,
+      allowedFoods: savedAllowedFoodsRef.current,
+      seatTypeSettings: savedSeatTypeSettingsRef.current,
+    };
+    return JSON.stringify(currentSnapshot) !== JSON.stringify(savedSnapshot);
+  };
 
   const getElapsedTime = (startTime: Date) => {
     const elapsed = Math.floor((Date.now() - startTime.getTime()) / 60000);
@@ -65,6 +115,34 @@ export function OwnerDashboard({
         ? prev.selectedDays.filter((d) => d !== day)
         : [...prev.selectedDays, day],
     }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleTimeChange = (key: 'startTime' | 'endTime', value: string) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleTabChange = (nextTab: string) => {
+    if (nextTab === activeTab) return;
+    const hasChanges = activeTab === 'settings' && isSettingsDirty();
+    if (hasChanges) {
+      const confirmed = window.confirm(
+        '설정 저장하기를 누르지 않고 다른 탭으로 이동할 경우 저장이 되지 않을 수 있습니다. 이동할까요?'
+      );
+      if (!confirmed) {
+        setTabGuardKey((prev) => prev + 1);
+        return;
+      }
+      if (savedSettingsRef.current && savedAllowedFoodsRef.current && savedSeatTypeSettingsRef.current) {
+        setSettings(clone(savedSettingsRef.current));
+        onAllowedFoodsChange(clone(savedAllowedFoodsRef.current));
+        onSeatTypeSettingsChange(clone(savedSeatTypeSettingsRef.current));
+      }
+      setCustomFoodInput('');
+      setHasUnsavedChanges(false);
+    }
+    setActiveTab(nextTab as 'current' | 'settings');
   };
 
   const toggleFoodOption = (foodName: string) => {
@@ -79,30 +157,43 @@ export function OwnerDashboard({
       };
       onAllowedFoodsChange([...allowedFoods, newFood]);
     }
+    setHasUnsavedChanges(true);
   };
 
   const addCustomFood = () => {
-    if (!customFoodInput.trim()) {
+    const trimmedInput = customFoodInput.trim();
+    if (!trimmedInput) {
       alert('음식 이름을 입력해주세요.');
       return;
     }
 
-    if (allowedFoods.some((f) => f.name === customFoodInput.trim())) {
+    if (allowedFoods.some((f) => f.name === trimmedInput)) {
       alert('이미 추가된 음식입니다.');
       return;
     }
 
+    if (!defaultFoodOptions.includes(trimmedInput)) {
+      setDefaultFoodOptions((prev) => [...prev, trimmedInput]);
+    }
+
+    const isCustom = !BASE_FOOD_OPTIONS.includes(trimmedInput);
     const newFood: AllowedFood = {
       id: Date.now().toString(),
-      name: customFoodInput.trim(),
-      isCustom: true,
+      name: trimmedInput,
+      isCustom,
     };
     onAllowedFoodsChange([...allowedFoods, newFood]);
+    setHasUnsavedChanges(true);
     setCustomFoodInput('');
   };
 
   const removeCustomFood = (id: string) => {
+    const targetFood = allowedFoods.find((f) => f.id === id);
     onAllowedFoodsChange(allowedFoods.filter((f) => f.id !== id));
+    if (targetFood?.isCustom && !BASE_FOOD_OPTIONS.includes(targetFood.name)) {
+      setDefaultFoodOptions((prev) => prev.filter((name) => name !== targetFood.name));
+    }
+    setHasUnsavedChanges(true);
   };
 
   // 좌석 유형 추가
@@ -112,6 +203,7 @@ export function OwnerDashboard({
       ...seatTypeSettings,
       { id: newId, capacity: 2, count: 1 },
     ]);
+    setHasUnsavedChanges(true);
   };
 
   // 좌석 유형 삭제
@@ -119,6 +211,7 @@ export function OwnerDashboard({
     onSeatTypeSettingsChange(
       seatTypeSettings.filter((setting) => setting.id !== id)
     );
+    setHasUnsavedChanges(true);
   };
 
   // 좌석 인원 수 조정
@@ -130,6 +223,7 @@ export function OwnerDashboard({
           : setting
       )
     );
+    setHasUnsavedChanges(true);
   };
 
   // 좌석 개수 조정
@@ -141,9 +235,10 @@ export function OwnerDashboard({
           : setting
       )
     );
+    setHasUnsavedChanges(true);
   };
 
-  // 좌석 구성을 기반으로 실제 좌석 생성/동기화
+  // 설정을 기반으로 실제 좌석 생성/동기화
   const syncSeatsWithSettings = () => {
     const newSeats: RegisteredSeat[] = [];
     
@@ -169,7 +264,11 @@ export function OwnerDashboard({
     });
     
     onRegisteredSeatsChange(newSeats);
-    alert('좌석 구성이 저장되었습니다');
+    alert('설정이 저장되었습니다');
+    savedSettingsRef.current = clone(settings);
+    savedAllowedFoodsRef.current = clone(allowedFoods);
+    savedSeatTypeSettingsRef.current = clone(seatTypeSettings);
+    setHasUnsavedChanges(false);
   };
 
   // 좌석 열기/닫기 토글
@@ -245,12 +344,17 @@ export function OwnerDashboard({
             <div className="text-xs text-neutral-500">카페 운영자 화면</div>
           </div>
         </div>
-        <button onClick={onRoleSwitch} className="p-2 -mr-2">
-          <Settings className="w-5 h-5 text-neutral-700" />
-        </button>
+        <div className="flex items-center gap-1 -mr-2">
+          <button onClick={onRoleSwitch} className="p-2">
+            <User className="w-5 h-5 text-neutral-700" />
+          </button>
+          <button onClick={onRoleSwitch} className="p-2">
+            <Settings className="w-5 h-5 text-neutral-700" />
+          </button>
+        </div>
       </header>
 
-      <Tabs defaultValue="settings" className="flex-1 flex flex-col">
+      <Tabs key={tabGuardKey} value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col">
         <TabsList className="mx-5 mt-4 w-auto">
           <TabsTrigger value="current" className="flex-1">
             현재 이용 중
@@ -408,11 +512,11 @@ export function OwnerDashboard({
         <TabsContent value="settings" className="flex-1 pb-6">
           <div className="px-5 py-5 space-y-6">
             {/* 안내 문구 */}
-            <div className="text-center py-2">
+            {/* <div className="text-center py-2">
               <p className="text-sm text-neutral-500">
-                카페에 존재하는 전체 좌석 구성을 설정해주세요
+                카페 좌석 운영을 위한 설정을 완료해주세요.
               </p>
-            </div>
+            </div> */}
 
             {/* 1. 요일 설정 */}
             <div className="bg-white rounded-xl border border-neutral-200 p-5">
@@ -443,9 +547,12 @@ export function OwnerDashboard({
                   <input
                     type="time"
                     value={settings.startTime}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, startTime: e.target.value }))
-                    }
+                    onChange={(e) => handleTimeChange('startTime', e.target.value)}
+                    onClick={(e) => handleTimeToggle(e.currentTarget)}
+                    onTouchStart={(e) => handleTimeToggle(e.currentTarget)}
+                    onBlur={(e) => {
+                      e.currentTarget.dataset.pickerOpen = 'false';
+                    }}
                     className="flex-1 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
                   />
                 </div>
@@ -454,9 +561,12 @@ export function OwnerDashboard({
                   <input
                     type="time"
                     value={settings.endTime}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, endTime: e.target.value }))
-                    }
+                    onChange={(e) => handleTimeChange('endTime', e.target.value)}
+                    onClick={(e) => handleTimeToggle(e.currentTarget)}
+                    onTouchStart={(e) => handleTimeToggle(e.currentTarget)}
+                    onBlur={(e) => {
+                      e.currentTarget.dataset.pickerOpen = 'false';
+                    }}
                     className="flex-1 px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900"
                   />
                 </div>
@@ -473,9 +583,9 @@ export function OwnerDashboard({
               <div className="bg-white rounded-xl border border-neutral-200 p-5">
                 {/* 기본 제공 음식 옵션 */}
                 <div className="mb-4">
-                  <div className="text-sm text-neutral-600 mb-2">기본 음식 옵션 (복수 선택 가능)</div>
+                  <div className="text-sm text-neutral-600 mb-2">설정 옵션 (복수 선택 가능)</div>
                   <div className="flex flex-wrap gap-2">
-                    {DEFAULT_FOOD_OPTIONS.map((food) => {
+                    {defaultFoodOptions.map((food) => {
                       const isSelected = allowedFoods.some((f) => f.name === food);
                       return (
                         <button
@@ -627,13 +737,13 @@ export function OwnerDashboard({
               </button>
             </div>
 
-            {/* 좌석 구성 저장 버튼 */}
+            {/* 설정 저장 버튼 */}
             <div className="pt-2">
               <button
                 onClick={syncSeatsWithSettings}
                 className="w-full bg-neutral-900 text-white py-4 rounded-xl hover:bg-neutral-800 transition-colors"
               >
-                좌석 구성 저장하기
+                설정 저장하기
               </button>
             </div>
           </div>

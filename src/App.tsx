@@ -382,22 +382,37 @@ export default function App() {
                 const badgeColor = isWaiting ? 'text-amber-700 bg-white border-amber-600' : 'text-green-600 bg-white border-green-600';
                 const statusText = isWaiting ? '이용 대기 중' : '이용 중';
                 const dividerColor = isWaiting ? 'border-amber-200' : 'border-green-200';
+                const handleUsageClick = () => {
+                  if (isWaiting) {
+                    setSelectedCafeName(usage.cafeName);
+                    setSelectedUsageId(usage.id);
+                    setShowOwnerConfirmModal(true);
+                  } else {
+                    setSelectedUsageId(usage.id);
+                    setShowCurrentUsageModal(true);
+                  }
+                };
 
                 return (
                   <div
                     key={usage.id}
-                    onClick={() => {
-                      if (isWaiting) {
-                        setSelectedCafeName(usage.cafeName);
-                        setSelectedUsageId(usage.id);
-                        setShowOwnerConfirmModal(true);
-                      } else {
-                        setSelectedUsageId(usage.id);
-                        setShowCurrentUsageModal(true);
-                      }
-                    }}
-                    className={`p-4 border ${borderColor} rounded-xl ${bgColor} ${isWaiting ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+                    className={`relative p-4 border ${borderColor} rounded-xl ${bgColor} overflow-hidden`}
                   >
+                    <div
+                      className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center z-10"
+                      onClick={handleUsageClick}
+                    >
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleUsageClick();
+                        }}
+                        className="px-4 py-2 rounded-full bg-white text-neutral-900 text-md border border-neutral-200 shadow-sm hover:bg-neutral-50"
+                      >
+                        카페 도착 후 클릭
+                      </button>
+                    </div>
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h3 className="text-neutral-900">{usage.cafeName}</h3>

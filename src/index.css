@@ -1357,6 +1357,10 @@
     color: var(--muted-foreground);
   }
 
+	.text-red-600 {
+    color: var(--color-red-600);
+  }
+
   .text-neutral-400 {
     color: var(--color-neutral-400);
   }
