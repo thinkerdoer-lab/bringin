@@ -15,7 +15,8 @@ const BASE_FOOD_OPTIONS = [
   '빵/디저트',
   '도시락',
   '샌드위치',
-  '샐러드',
+	'샐러드',
+	'케이크',
 ];
 
 export function OwnerDashboard({

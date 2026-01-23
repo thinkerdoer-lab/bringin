@@ -398,21 +398,23 @@ export default function App() {
                     key={usage.id}
                     className={`relative p-4 border ${borderColor} rounded-xl ${bgColor} overflow-hidden`}
                   >
-                    <div
-                      className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center z-10"
-                      onClick={handleUsageClick}
-                    >
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleUsageClick();
-                        }}
-                        className="px-4 py-2 rounded-full bg-white text-neutral-900 text-md border border-neutral-200 shadow-sm hover:bg-neutral-50"
+                    {isWaiting && (
+                      <div
+                        className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center z-10"
+                        onClick={handleUsageClick}
                       >
-                        카페 도착 후 클릭
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleUsageClick();
+                          }}
+                          className="px-4 py-2 rounded-full bg-white text-neutral-900 text-md border border-neutral-200 shadow-sm hover:bg-neutral-50"
+                        >
+                          카페 도착 후 클릭
+                        </button>
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h3 className="text-neutral-900">{usage.cafeName}</h3>

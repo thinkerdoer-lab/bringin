@@ -1056,6 +1056,10 @@
     background-color: var(--color-amber-50);
   }
 
+	.bg-black {
+    background-color: var(--color-black);
+  }
+
   .bg-black\/40 {
     background-color: #0006;
   }

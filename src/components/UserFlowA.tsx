@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, MapPin, Clock, Users, ChevronRight, ChevronDown, CheckCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Users, ChevronRight, ChevronDown, CheckCircle, X } from 'lucide-react';
 import type { SeatTypeSetting, AllowedFood, UsageHistory } from '../App';
 import { CopyableAddress } from './CopyableAddress';
 
@@ -25,21 +25,25 @@ const MOCK_CAFES = [
     id: 1,
     name: '브라운 카페',
     address: '서울시 강남구 테헤란로 123',
+    phone: '02-1234-5678',
     distance: 120,
     availableSeats: 3,
 		allowsBread: true,
+		allowsCake: true,
 		allowsSandwich: true,
     allowsFood: false,
     seatTypes: [
       { id: 'brown-2', capacity: 2, count: 1 },
       { id: 'brown-3', capacity: 3, count: 1 },
       { id: 'brown-4', capacity: 4, count: 1 },
+      { id: 'brown-5', capacity: 5, count: 1 },
     ],
   },
   {
     id: 2,
     name: '모닝 커피',
     address: '서울시 강남구 역삼로 210',
+    phone: '02-2345-6789',
     distance: 250,
     availableSeats: 2,
     allowsBread: false,
@@ -53,6 +57,7 @@ const MOCK_CAFES = [
     id: 3,
     name: '카페 온',
     address: '서울시 강남구 논현로 455',
+    phone: '02-3456-7890',
     distance: 380,
     availableSeats: 1,
     allowsBread: true,
@@ -66,6 +71,7 @@ const MOCK_CAFES = [
     id: 4,
     name: '스위트 커피',
     address: '서울시 강남구 봉은사로 77',
+    phone: '02-4567-8901',
     distance: 650,
     availableSeats: 2,
     allowsBread: true,
@@ -80,6 +86,7 @@ const MOCK_CAFES = [
     id: 5,
     name: '베이커리 카페',
     address: '서울시 강남구 선릉로 315',
+    phone: '02-5678-9012',
     distance: 850,
     availableSeats: 1,
     allowsBread: true,
@@ -125,6 +132,8 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
   const [drinkQuantities, setDrinkQuantities] = useState<{ [key: number]: number }>({});
   const [distanceFilter, setDistanceFilter] = useState<number>(500);
   const [showDistanceDropdown, setShowDistanceDropdown] = useState(false);
+  const [showLargePartyModal, setShowLargePartyModal] = useState(false);
+  const [selectedLargePartyCafe, setSelectedLargePartyCafe] = useState<(typeof MOCK_CAFES)[number] | null>(null);
 
   const updateState = (updates: Partial<FlowState>) => {
     setState((prev) => ({ ...prev, ...updates }));
@@ -170,6 +179,9 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
     const labels: string[] = [];
     if (cafe.allowsBread) {
       labels.push('빵/디저트');
+		}
+		if (cafe.allowsCake) {
+      labels.push('케이크');
 		}
 		if (cafe.allowsSandwich) {
       labels.push('샌드위치');
@@ -282,13 +294,22 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
     const filteredCafes = MOCK_CAFES.filter((cafe) => {
       const hasOpenSeatType = cafe.seatTypes?.some((seat) => seat.count > 0);
       const matchesSelectedSeat = normalizedSelectedSeatCapacity !== null
-        ? cafe.seatTypes?.some(
-            (seat) => seat.count > 0 && seat.capacity >= normalizedSelectedSeatCapacity
-          )
+        ? cafe.seatTypes?.some((seat) => {
+            const upperBound =
+              normalizedSelectedSeatCapacity === 2
+                ? 4
+                : normalizedSelectedSeatCapacity + 1;
+            return (
+              seat.count > 0 &&
+              seat.capacity >= normalizedSelectedSeatCapacity &&
+              seat.capacity <= upperBound
+            );
+          })
         : true;
       const matchesCategory =
         cafeCategory === 'all' ||
         (cafeCategory === 'etc' && cafe.allowsFood) ||
+        (cafeCategory === 'cake' && cafe.allowsCake) ||
         (cafeCategory === 'bread' && cafe.allowsBread) ||
         (cafeCategory === 'sandwich' && cafe.allowsSandwich);
       const isWithinDistance = cafe.distance <= distanceFilter;
@@ -319,6 +340,7 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
             {[
               { id: 'all', label: '전체' },
               { id: 'bread', label: '빵/디저트' },
+              { id: 'cake', label: '케이크' },
               { id: 'sandwich', label: '샌드위치' },
               { id: 'etc', label: '기타' },
             ].map((category) => {
@@ -395,6 +417,11 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
                 <button
                   key={cafe.id}
                   onClick={() => {
+                    if (state.peopleCount >= 5) {
+                      setSelectedLargePartyCafe(cafe);
+                      setShowLargePartyModal(true);
+                      return;
+                    }
                     updateState({ selectedCafe: cafe });
                     setStep('cafe-detail');
                   }}
@@ -414,6 +441,61 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
             })
           )}
         </div>
+        {showLargePartyModal && selectedLargePartyCafe && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-5">
+            <div className="bg-white rounded-2xl w-full max-w-sm p-6 relative">
+              <button
+                onClick={() => {
+                  setShowLargePartyModal(false);
+                  setSelectedLargePartyCafe(null);
+                }}
+                className="absolute top-4 right-4 p-2 hover:bg-neutral-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-neutral-600" />
+              </button>
+              <div className="text-center pt-2">
+                <div className="text-lg text-neutral-900 mb-2 font-medium">
+                  5인 이상 이용 안내
+                </div>
+                <div className="text-sm text-neutral-600 mb-5">
+									5인 이상은 사장님에게<br />
+									자리가 있는지 전화로 확인해주세요.
+                </div>
+              </div>
+              <div className="bg-neutral-50 rounded-xl p-4 space-y-3 text-sm">
+                <div className="flex justify-between text-neutral-600">
+                  <span>카페</span>
+                  <span className="text-neutral-900">{selectedLargePartyCafe.name}</span>
+                </div>
+                <div className="flex justify-between text-neutral-600">
+                  <span>전화번호</span>
+                  <CopyableAddress address={selectedLargePartyCafe.phone} className="text-neutral-900 text-right" />
+                </div>
+              </div>
+              <div className="mt-5 space-y-2">
+                <a
+                  href={`tel:${selectedLargePartyCafe.phone}`}
+                  className="w-full block text-center bg-neutral-900 text-white py-3 rounded-xl hover:bg-neutral-800 transition-colors"
+                >
+                  전화하기
+                </a>
+                <button
+                  onClick={() => {
+                    setShowLargePartyModal(false);
+                    if (selectedLargePartyCafe) {
+                      updateState({ selectedCafe: selectedLargePartyCafe });
+                      setStep('cafe-detail');
+                    }
+                    setSelectedLargePartyCafe(null);
+                  }}
+                  className="w-full bg-white text-neutral-900 py-3 rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors"
+                >
+                  확인했어요.
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -434,6 +516,10 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
             <div className="space-y-2">
               <div className="text-neutral-900">카페 주소</div>
               <CopyableAddress address={cafe.address} className="text-sm text-neutral-600" />
+            </div>
+            <div className="space-y-2">
+              <div className="text-neutral-900">카페 전화번호</div>
+              <CopyableAddress address={cafe.phone} className="text-sm text-neutral-600" />
             </div>
             <div className="space-y-3">
               <div className="text-neutral-900">허용 음식 종류</div>
@@ -478,27 +564,26 @@ export function UserFlowA({ onBack, onLogout, onRoleSwitch, seatTypeSettings, al
   if (step === 'seat-select') {
     // 사장님이 설정한 좌석 유형만 표시
     const minCapacity = state.peopleCount;
-    const maxCapacity = state.peopleCount * 2;
-    const hasMatchingSeatType = seatTypeSettings.some(
-      (s) => s.count > 0 && s.capacity >= minCapacity && s.capacity <= maxCapacity
-    );
-    const seatTypeSource = hasMatchingSeatType
-      ? seatTypeSettings
-      : MOCK_CAFES.flatMap((cafe) => cafe.seatTypes ?? []).reduce(
-          (acc, seat) => {
-            if (seat.count <= 0) {
-              return acc;
-            }
-            const existing = acc.find((item) => item.capacity === seat.capacity);
-            if (existing) {
-              existing.count += seat.count;
-            } else {
-              acc.push({ id: `cafe-${seat.capacity}`, capacity: seat.capacity, count: seat.count });
-            }
-            return acc;
-          },
-          [] as { id: string; capacity: number; count: number }[]
-        );
+    const maxCapacity = state.peopleCount === 2 ? 4 : state.peopleCount + 1;
+    const seatTypeMap = new Map<number, { id: string; capacity: number; count: number }>();
+    seatTypeSettings.forEach((setting) => {
+      seatTypeMap.set(setting.capacity, {
+        id: setting.id,
+        capacity: setting.capacity,
+        count: setting.count,
+      });
+    });
+    MOCK_CAFES.flatMap((cafe) => cafe.seatTypes ?? []).forEach((seat) => {
+      if (seat.count <= 0) return;
+      if (!seatTypeMap.has(seat.capacity)) {
+        seatTypeMap.set(seat.capacity, {
+          id: `cafe-${seat.capacity}`,
+          capacity: seat.capacity,
+          count: seat.count,
+        });
+      }
+    });
+    const seatTypeSource = Array.from(seatTypeMap.values());
     const availableSeats = seatTypeSource.filter(
       (s) => s.count > 0 && s.capacity >= minCapacity && s.capacity <= maxCapacity
     );

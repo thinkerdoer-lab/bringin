@@ -39,7 +39,7 @@ export function CopyableAddress({ address, className }: CopyableAddressProps) {
         <button
           type="button"
           onClick={handleCopy}
-          className="p-1 rounded hover:bg-neutral-100 transition-colors"
+          className="p-1 rounded hover:bg-neutral-100 transition-colors block"
           aria-label="주소 복사"
           title="주소 복사"
         >
